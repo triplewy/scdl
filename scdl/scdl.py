@@ -7,11 +7,11 @@ Usage:
     scdl -l <track_url> [-a | -f | -C | -t | -p][-c][-n <maxtracks>][-o <offset>]\
 [--hidewarnings][--debug | --error][--path <path>][--addtofile][--addtimestamp]
 [--onlymp3][--hide-progress][--min-size <size>][--max-size <size>][--remove]
-[--no-playlist-folder][--download-archive <file>][--extract-artist][--flac]
+[--no-playlist-folder][--download-archive <file>][--extract-artist][--flac][--limit <limit>]
     scdl me (-s | -a | -f | -t | -p | -m)[-c][-o <offset>]\
 [--hidewarnings][--debug | --error][--path <path>][--addtofile][--addtimestamp]
 [--onlymp3][--hide-progress][--min-size <size>][--max-size <size>][--remove]
-[--no-playlist-folder][--download-archive <file>][--extract-artist][--flac]
+[--no-playlist-folder][--download-archive <file>][--extract-artist][--flac][--limit <limit>]
     scdl -h | --help
     scdl --version
 
@@ -50,6 +50,7 @@ Options:
     --path [path]               Use a custom path for downloaded files
     --remove                    Remove any files not downloaded from execution
     --flac                      Convert original files to .flac
+    --limit [limit]             Limit number of tracks to be downloaded
 """
 
 import logging
@@ -87,6 +88,7 @@ arguments = None
 token = ''
 path = ''
 offset = 1
+limit = 10
 
 url = {
     'playlists-liked': ('https://api-v2.soundcloud.com/users/{0}/playlists'
@@ -118,6 +120,7 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     global offset
     global arguments
+    global limit
 
     # Parse argument
     arguments = docopt(__doc__, version=__version__)
@@ -177,6 +180,13 @@ def main():
             logger.error('Invalid path in arguments...')
             sys.exit()
     logger.debug('Downloading to ' + os.getcwd() + '...')
+
+    if arguments['--limit']:
+        try:
+            limit = int(arguments['--limit'])
+        except:
+            logger.error('Invalid limit input')
+            sys.exit()
 
     if arguments['-l']:
         parse_url(arguments['-l'])
@@ -348,6 +358,7 @@ def download(user, dl_type, name):
     logger.debug(dl_url)
     resources = client.get_collection(dl_url, token)
     del resources[:offset - 1]
+    resources = resources[:limit]
     logger.debug(resources)
     total = len(resources)
     logger.info('Retrieved {0} {1}'.format(total, name))
